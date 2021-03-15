@@ -1,0 +1,204 @@
+---
+title: "Untitled"
+output: html_document
+---
+## R Markdown
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Abstract 
+## 1.Importing Libraries
+## 1.1 Dataset Summary (description of dataset)
+## 1.2 Data Cleaning & Quality 
+## 2. EDA (Explanatory data analysis) - graphical analysis 
+## 2.1 PCA + visual analysis 
+## 2.2 Cluster Analysis 
+----- Machine learning 
+## Logistic regression
+## Neural Networks 
+## * Others etcc
+---- -HPCI 
+## Use R packages such as caret & parallel (to implement)
+## Conclusion
+
+```{r}
+#Required libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+```
+
+*---Research Question: Predict the energy assumption/power generation based on weather conditions---*
+
+
+```{r}
+#Required libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+```
+
+*---Research Question: Predict the energy assumption/power generation based on weather conditions---*
+
+```{r}
+#Weather csv files 
+weather.daily <- read.csv("weather_daily.csv")
+weather.hourly <- read.csv("weather_hourly.csv")
+```
+ 
+
+```{r}
+# Combined weather data set
+weather.df <- merge(weather.daily, weather.hourly, by=c("time","visibility","windBearing","icon","dewPoint","windSpeed",'pressure',"summary","precipType","humidity"), all.x=TRUE,all.y=FALSE)
+
+#Removing empty columns
+weather2 = select(weather.df, -c(temperature,apparentTemperature))
+```
+
+```{r}
+#Energy/power data sets 
+energy.df <- read.csv("combined.csv")
+weather2$time <- as.Date(weather2$time)
+names(energy.df)[2] ="time"
+energy.df$time <- as.Date(energy.df$time)
+```
+
+
+```{r}
+#weather&energy
+energyvibes<- inner_join(weather2, energy.df, by="time")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+****************************************************
+```{r}
+#Weather csv files 
+weather.daily <- read.csv("weather_daily.csv")
+weather.hourly <- read.csv("weather_hourly.csv")
+
+#Power data set  (sample of the first 1000 rows)
+power.head<- read.csv("power.1000lines.csv")
+power.tails <- read.csv("power.tail.csv")
+```
+
+
+```{r}
+#Renaming DateTime column in prep for combining 
+names(power.head)[3]= "time"
+names(power.head)[4]= 'energy'
+names(power.tails)[1]= "LCLid"
+names(power.tails)[2]= "stdorToU"
+names(power.tails)[3]= "time"
+names(power.tails)[4]= "energy"
+names(power.tails)[5]= "Acorn"
+names(power.tails)[6]= "Acorn_grouped"
+```
+
+```{r}
+# Combining power data sets 
+power.df<- merge(power.head, power.tails, by=c("LCLid", "time","energy","stdorToU","Acorn","Acorn_grouped"), all.x=TRUE, all.y=TRUE)
+
+more.df <- read.csv("combined.csv")
+
+power.df$time <- as.Date(power.df$time)
+
+names(more.df)[2] = "time"
+
+
+#Combined with more energy 
+ultimate.power<- merge(power.df, more.df, by=c("LCLid", "time"),all.x=TRUE, all.y=TRUE)
+
+
+
+#Combining weather data sets
+weather.df <- merge(weather.daily, weather.hourly, by=c("time","visibility","windBearing","icon","dewPoint","windSpeed",'pressure',"summary","precipType","humidity"), all.x=TRUE,all.y=FALSE)
+
+#Removing empty columns
+weather2 = select(weather.df, -c(temperature,apparentTemperature))
+```
+
+-- I have noticed a difference in the amount of obs when you write (all.x=TRUE, all.y=False) vs (all.x=TRUE ,all.y=TRUE)
+The code I ended up settling for has the same number of obs of weather.daily data set - quite strange but I am not sure where I went wrong there
+Also it does come with less missing values'
+```{r}
+# Combining both weather and power data sets together
+all.together <- merge(weather2, power.df, by="time", all.x=TRUE,all.y=TRUE)
+
+colSums(is.na(all.together))
+```
+
+
+SO MANYY MISSING VALUES maybe i am merging it all wrong... 
+
+
+/Users/munamohamed/Downloads/daily_dataset
+
+```{r}
+more.df <- read.csv("combined.csv")
+```
+
+
+
+
+
+
+
+
+
+
