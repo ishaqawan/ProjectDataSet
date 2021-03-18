@@ -1,0 +1,195 @@
+---
+title: "Untitled"
+output: html_document
+---
+## R Markdown
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Abstract 
+## 1.Importing Libraries
+## 1.1 Dataset Summary (description of dataset)
+## 1.2 Data Cleaning & Quality 
+## 2. EDA (Explanatory data analysis) - graphical analysis 
+## 2.1 PCA + visual analysis 
+## 2.2 Cluster Analysis 
+----- Machine learning 
+## Logistic regression
+## Neural Networks 
+## * Others etcc
+---- -HPCI 
+## Use R packages such as caret & parallel (to implement)
+## Conclusion
+
+```{r}
+#Required libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+```
+
+*---Research Question: Predict the energy assumption/power generation based on weather conditions---*
+
+
+```{r}
+#Required libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+```
+
+*---Research Question: Predict the energy assumption/power generation based on weather conditions---*
+
+```{r}
+#Weather csv files 
+weather.daily <- read.csv("weather_daily.csv")
+weather.hourly <- read.csv("weather_hourly.csv")
+```
+ 
+
+```{r}
+# Combined weather data set
+weather.df <- merge(weather.daily, weather.hourly, by=c("time","visibility","windBearing","icon","dewPoint","windSpeed",'pressure',"summary","precipType","humidity"), all.x=TRUE,all.y=FALSE)
+
+#Removing empty columns
+weather2 = select(weather.df, -c(temperature,apparentTemperature, cloudCover, uvIndex, icon))
+```
+
+```{r}
+#Energy/power data sets 
+energy.df <- read.csv("combined.csv")
+weather2$time <- as.Date(weather2$time)
+names(energy.df)[2] ="time"
+energy.df$time <- as.Date(energy.df$time)
+```
+
+
+```{r}
+#weather&energy
+energyvibes<- inner_join(weather2, energy.df, by="time")
+```
+
+
+```{r}
+# Feature reduction
+
+energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
+                                          apparentTemperatureLowTime, sunsetTime, sunriseTime,
+                                          apparentTemperatureMinTime, uvIndexTime,apparentTemperatureHigh,
+                                          apparentTemperatureLow, apparentTemperatureMaxTime, temperatureMaxTime,
+                                          temperatureMinTime, apparentTemperatureMax, apparentTemperatureMin))
+
+```
+
+```{r}
+summary(energy)
+```
+
+```{r}
+energy$energy_median <- as.numeric(energy$energy_median)
+energy$energy_mean <- as.numeric(energy$energy_mean)
+energy$energy_max <- as.numeric(energy$energy_max)
+energy$energy_count <- as.numeric(energy$energy_count)
+energy$energy_std <- as.numeric(energy$energy_std)
+energy$energy_sum <- as.numeric(energy$energy_sum)
+energy$energy_min <- as.numeric(energy$energy_min)
+```
+
+```{r}
+# Checking outliers
+boxplot(energy$energy_median)
+boxplot(energy$energy_mean)
+boxplot(energy$energy_max)
+boxplot(energy$energy_count)
+boxplot(energy$energy_std)
+boxplot(energy$energy_sum)
+boxplot(energy$energy_min)
+```
+
+```{r}
+boxplot(energy$visibility)
+boxplot(energy$windBearing)
+boxplot(energy$dewPoint)
+boxplot(energy$windSpeed)
+boxplot(energy$pressure)
+boxplot(energy$humidity)
+boxplot(energy$temperatureMax)
+boxplot(energy$temperatureLow)
+boxplot(energy$temperatureMin)
+boxplot(energy$temperatureHigh)
+boxplot(energy$moonPhase)
+```
+
+```{r}
+# Gathering outlier values
+box_median <- boxplot(energy$energy_median, plot = F)$out
+box_mean <- boxplot(energy$energy_mean, plot = F)$out
+box_max <- boxplot(energy$energy_max, plot = F)$out
+box__count <-boxplot(energy$energy_count, plot = F)$out
+box_std <- boxplot(energy$energy_std, plot = F)$out
+box_sum <- boxplot(energy$energy_sum, plot = F)$out
+box_min <- boxplot(energy$energy_min, plot = F)$out
+box_visibility <- boxplot(energy$visibility, plot = F)$out
+box_windspeed <- boxplot(energy$windSpeed, plot = F)$out
+box_pressure <- boxplot(energy$pressure, plot = F)$out
+box_humidity <- boxplot(energy$humidity, plot = F)$out
+```
+
+```{r}
+# Removing outlier rows from the dataset
+d1 <- energy[-box_median, ]
+d2 <- d1[-box_mean, ]
+d3 <- d2[-box_max, ]
+d4 <- d3[-box__count, ]
+d5 <- d4[-box_std, ]
+d6 <- d5[-box_sum, ]
+d7 <- d6[-box_min, ]
+d8 <- d7[-box_visibility, ]
+d9 <- d8[-box_windspeed, ]
+d10 <- d9[-box_pressure, ]
+d11 <- d10[-box_humidity, ]
+```
+
+```{r}
+sum(is.na(d11))
+```
+
+```{r}
+colSums(is.na(d11))
+```
+
+```{r}
+# Removing observations with missing values
+data <- na.omit(d11)
+```
+
+```{r}
+# Subsampling the data
+data_clean <- data[sample(nrow(data), 100000, replace = FALSE),]
+```
+
+```{r}
+summary(data_clean)
+```
+
+```{r}
+data_clean$precipType <- as.factor(data_clean$precipType)
+```
+
+```{r}
+write.csv(data_clean, "/Users/RoshniPatel/Documents/data.csv", row.names = FALSE)
+```
+
+
+****************************************************
+
+
+
+
+
+
+
+
