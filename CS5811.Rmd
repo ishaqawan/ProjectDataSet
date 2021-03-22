@@ -1,0 +1,445 @@
+---
+title: "Untitled"
+output: html_document
+---
+## R Markdown
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Abstract 
+## 1.Importing Libraries
+## 1.1 Dataset Summary (description of dataset)
+## 1.2 Data Cleaning & Quality 
+## 2. EDA (Explanatory data analysis) - graphical analysis 
+## 2.1 PCA + visual analysis 
+## 2.2 Cluster Analysis 
+----- Machine learning 
+## Logistic regression
+## Neural Networks 
+## * Others etcc
+---- -HPCI 
+## Use R packages such as caret & parallel (to implement)
+## Conclusion
+
+
+```{r}
+#Required libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+```
+
+*---Research Question: Predict the energy assumption/power generation based on weather conditions---*
+
+```{r}
+#Weather csv files 
+weather.daily <- read.csv("weather_daily.csv")
+weather.hourly <- read.csv("weather_hourly.csv")
+```
+ 
+
+```{r}
+# Combined weather data set
+weather.df <- merge(weather.daily, weather.hourly, by=c("time","visibility","windBearing","icon","dewPoint","windSpeed",'pressure',"summary","precipType","humidity"), all.x=TRUE,all.y=FALSE)
+
+#Removing empty columns
+weather2 = select(weather.df, -c(temperature,apparentTemperature, cloudCover, uvIndex, icon))
+```
+
+```{r}
+#Energy/power data sets 
+energy.df <- read.csv("combined.csv")
+weather2$time <- as.Date(weather2$time)
+names(energy.df)[2] ="time"
+energy.df$time <- as.Date(energy.df$time)
+```
+
+
+```{r}
+#weather&energy
+energyvibes<- inner_join(weather2, energy.df, by="time")
+```
+
+
+```{r}
+# Feature reduction
+
+energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
+                                          apparentTemperatureLowTime, sunsetTime, sunriseTime,
+                                          apparentTemperatureMinTime, uvIndexTime,apparentTemperatureHigh,
+                                          apparentTemperatureLow, apparentTemperatureMaxTime, temperatureMaxTime,
+                                          temperatureMinTime, apparentTemperatureMax, apparentTemperatureMin))
+
+```
+
+```{r}
+summary(energy)
+```
+
+```{r}
+energy$energy_median <- as.numeric(energy$energy_median)
+energy$energy_mean <- as.numeric(energy$energy_mean)
+energy$energy_max <- as.numeric(energy$energy_max)
+energy$energy_count <- as.numeric(energy$energy_count)
+energy$energy_std <- as.numeric(energy$energy_std)
+energy$energy_sum <- as.numeric(energy$energy_sum)
+energy$energy_min <- as.numeric(energy$energy_min)
+```
+
+```{r}
+# Checking outliers
+boxplot(energy$energy_median)
+boxplot(energy$energy_mean)
+boxplot(energy$energy_max)
+boxplot(energy$energy_count)
+boxplot(energy$energy_std)
+boxplot(energy$energy_sum)
+boxplot(energy$energy_min)
+```
+
+```{r}
+boxplot(energy$visibility)
+boxplot(energy$windBearing)
+boxplot(energy$dewPoint)
+boxplot(energy$windSpeed)
+boxplot(energy$pressure)
+boxplot(energy$humidity)
+boxplot(energy$temperatureMax)
+boxplot(energy$temperatureLow)
+boxplot(energy$temperatureMin)
+boxplot(energy$temperatureHigh)
+boxplot(energy$moonPhase)
+```
+
+```{r}
+box_median <- boxplot(energy$energy_median, plot = F)$out
+d1 <- energy[!(energy$energy_median %in% box_median), ]
+boxplot(d1$energy_median)
+```
+
+```{r}
+box_mean <- boxplot(d1$energy_mean, plot = F)$out
+d2 <- d1[!(d1$energy_mean %in% box_mean), ]
+boxplot(d2$energy_mean)
+```
+
+```{r}
+box_max <- boxplot(d2$energy_max, plot = F)$out
+d3 <- d2[!(d2$energy_max %in% box_max), ]
+boxplot(d3$energy_max)
+```
+
+# energy_count has a weird boxplot
+
+```{r}
+#box_count <- boxplot(d3$energy_count, plot = F)$out
+#d4 <- d3[!(d3$energy_count %in% box_count), ]
+#boxplot(d4$energy_count)
+```
+
+```{r}
+box_std <- boxplot(d3$energy_std, plot = F)$out
+d5 <- d3[!(d3$energy_std %in% box_std), ]
+boxplot(d5$energy_std)
+```
+
+```{r}
+box_sum <- boxplot(d5$energy_sum, plot = F)$out
+d6 <- d5[!(d5$energy_sum %in% box_sum), ]
+boxplot(d6$energy_sum)
+```
+
+```{r}
+box_min <- boxplot(d6$energy_min, plot = F)$out
+d7 <- d6[!(d6$energy_min %in% box_min), ]
+boxplot(d7$energy_min)
+```
+
+```{r}
+box_visibility <- boxplot(d7$visibility, plot = F)$out
+d8 <- d7[!(d7$visibility %in% box_visibility), ]
+boxplot(d8$visibility)
+```
+
+```{r}
+box_windspeed <- boxplot(d8$windSpeed, plot = F)$out
+d9 <- d8[!(d8$windSpeed %in% box_windspeed), ]
+boxplot(d8$windSpeed)
+```
+
+```{r}
+box_pressure <- boxplot(d9$pressure, plot = F)$out
+d10 <- d9[!(d8$pressure %in% box_pressure), ]
+boxplot(d10$pressure)
+```
+
+```{r}
+box_humidity <- boxplot(d10$humidity, plot = F)$out
+d11 <- d10[!(d10$humidity %in% box_humidity), ]
+boxplot(d10$humidity)
+```
+
+
+## From the previous boxplots you notice that not all outliers are removed, so I am doing another round.
+## Median
+```{r}
+box_median <- boxplot(d11$energy_median, plot = F)$out
+d12 <- d11[!(d11$energy_median %in% box_median), ]
+boxplot(d12$energy_median)
+```
+
+```{r}
+box_median <- boxplot(d12$energy_median, plot = F)$out
+d13 <- d12[!(d12$energy_median %in% box_median), ]
+boxplot(d13$energy_median)
+```
+
+```{r}
+box_median <- boxplot(d13$energy_median, plot = F)$out
+d14 <- d13[!(d13$energy_median %in% box_median), ]
+boxplot(d14$energy_median)
+```
+
+## Mean
+```{r}
+box_mean <- boxplot(d14$energy_mean, plot = F)$out
+d15 <- d14[!(d14$energy_mean %in% box_mean), ]
+boxplot(d15$energy_mean)
+```
+
+```{r}
+box_mean <- boxplot(d15$energy_mean, plot = F)$out
+d16 <- d15[!(d15$energy_mean %in% box_mean), ]
+boxplot(d16$energy_mean)
+```
+
+```{r}
+box_mean <- boxplot(d16$energy_mean, plot = F)$out
+d17 <- d16[!(d16$energy_mean %in% box_mean), ]
+boxplot(d17$energy_mean)
+```
+
+```{r}
+box_mean <- boxplot(d17$energy_mean, plot = F)$out
+d18 <- d17[!(d17$energy_mean %in% box_mean), ]
+boxplot(d18$energy_mean)
+```
+
+## Max
+```{r}
+box_max <- boxplot(d18$energy_max, plot = F)$out
+d19 <- d18[!(d18$energy_max %in% box_max), ]
+boxplot(d19$energy_max)
+```
+
+```{r}
+box_max <- boxplot(d19$energy_max, plot = F)$out
+d20 <- d19[!(d19$energy_max %in% box_max), ]
+boxplot(d20$energy_max)
+```
+
+```{r}
+box_max <- boxplot(d20$energy_max, plot = F)$out
+d21 <- d20[!(d20$energy_max %in% box_max), ]
+boxplot(d21$energy_max)
+```
+
+## STD
+```{r}
+box_std <- boxplot(d21$energy_std, plot = F)$out
+d22 <- d21[!(d21$energy_std %in% box_std), ]
+boxplot(d22$energy_std)
+```
+
+```{r}
+box_std <- boxplot(d22$energy_std, plot = F)$out
+d23 <- d22[!(d22$energy_std %in% box_std), ]
+boxplot(d23$energy_std)
+```
+
+```{r}
+box_std <- boxplot(d23$energy_std, plot = F)$out
+d24 <- d23[!(d23$energy_std %in% box_std), ]
+boxplot(d24$energy_std)
+```
+
+```{r}
+box_std <- boxplot(d24$energy_std, plot = F)$out
+d25 <- d24[!(d24$energy_std %in% box_std), ]
+boxplot(d25$energy_std)
+```
+
+```{r}
+box_std <- boxplot(d25$energy_std, plot = F)$out
+d26 <- d25[!(d25$energy_std %in% box_std), ]
+boxplot(d26$energy_std)
+```
+
+```{r}
+box_std <- boxplot(d26$energy_std, plot = F)$out
+d27 <- d26[!(d26$energy_std %in% box_std), ]
+boxplot(d27$energy_std)
+```
+
+```{r}
+box_std <- boxplot(d27$energy_std, plot = F)$out
+d28 <- d27[!(d27$energy_std %in% box_std), ]
+boxplot(d28$energy_std)
+```
+
+## Sum
+```{r}
+box_sum <- boxplot(d28$energy_sum, plot = F)$out
+d1 <- d28[!(d28$energy_sum %in% box_sum), ]
+#boxplot(d1$energy_sum)
+```
+
+
+# My laptop was taking really long to run the codes, so I saved the last dataframe, reloaded it and carried on
+```{r}
+write.csv(d1, "/Users/RoshniPatel/Documents/d1.csv", row.names = FALSE)
+```
+
+```{r}
+d1 <- read.csv("~/Documents/d1.csv")
+```
+
+
+```{r}
+box_sum <- boxplot(d1$energy_sum, plot = F)$out
+d2 <- d1[!(d1$energy_sum %in% box_sum), ]
+boxplot(d2$energy_sum)
+```
+
+```{r}
+box_sum <- boxplot(d2$energy_sum, plot = F)$out
+d3 <- d2[!(d2$energy_sum %in% box_sum), ]
+boxplot(d3$energy_sum)
+```
+
+## Min
+```{r}
+box_min <- boxplot(d3$energy_min, plot = F)$out
+d4 <- d3[!(d3$energy_min %in% box_min), ]
+boxplot(d4$energy_min)
+```
+
+```{r}
+box_min <- boxplot(d4$energy_min, plot = F)$out
+d5 <- d4[!(d4$energy_min %in% box_min), ]
+boxplot(d5$energy_min)
+```
+
+```{r}
+box_min <- boxplot(d5$energy_min, plot = F)$out
+d1 <- d5[!(d5$energy_min %in% box_min), ]
+boxplot(d1$energy_min)
+```
+
+## Visibility
+```{r}
+box_visibility <- boxplot(d1$visibility, plot = F)$out
+d2 <- d1[!(d1$visibility %in% box_visibility), ]
+boxplot(d2$visibility)
+```
+
+```{r}
+box_visibility <- boxplot(d2$visibility, plot = F)$out
+d3 <- d2[!(d2$visibility %in% box_visibility), ]
+boxplot(d3$visibility)
+```
+
+```{r}
+box_visibility <- boxplot(d3$visibility, plot = F)$out
+d4 <- d3[!(d3$visibility %in% box_visibility), ]
+boxplot(d4$visibility)
+```
+
+```{r}
+box_visibility <- boxplot(d4$visibility, plot = F)$out
+d5 <- d4[!(d4$visibility %in% box_visibility), ]
+boxplot(d5$visibility)
+```
+
+
+## Windspeed
+```{r}
+box_windspeed <- boxplot(d5$windSpeed, plot = F)$out
+d1 <- d5[!(d5$windSpeed %in% box_windspeed), ]
+boxplot(d1$windSpeed)
+```
+
+```{r}
+box_windspeed <- boxplot(d1$windSpeed, plot = F)$out
+d2 <- d1[!(d1$windSpeed %in% box_windspeed), ]
+boxplot(d2$windSpeed)
+```
+
+## Pressure
+```{r}
+box_pressure <- boxplot(d2$pressure, plot = F)$out
+d3 <- d2[!(d2$pressure %in% box_pressure), ]
+boxplot(d3$pressure)
+```
+
+```{r}
+box_pressure <- boxplot(d3$pressure, plot = F)$out
+d4 <- d3[!(d3$pressure %in% box_pressure), ]
+boxplot(d4$pressure)
+```
+
+## Humidity
+```{r}
+box_humidity <- boxplot(d4$humidity, plot = F)$out
+d5 <- d4[!(d4$humidity %in% box_humidity), ]
+boxplot(d5$humidity)
+```
+
+```{r}
+sum(is.na(d5))
+```
+
+```{r}
+colSums(is.na(d5))
+```
+
+```{r}
+# Removing observations with missing values
+data <- na.omit(d5)
+```
+
+```{r}
+set.seed(100)
+# Subsampling the data
+data_clean <- data[sample(nrow(data), 100000, replace = FALSE),]
+```
+
+```{r}
+summary(data_clean)
+```
+
+```{r}
+data_clean$precipType <- as.factor(data_clean$precipType)
+data_clean$time <- as.Date(data_clean$time)
+```
+
+```{r}
+sum(duplicated(data_clean))
+```
+
+```{r}
+write.csv(data_clean, "/Users/RoshniPatel/Documents/data.csv", row.names = FALSE)
+```
+
+
+****************************************************
+
+
+
+
+
+
+
+
