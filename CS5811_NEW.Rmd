@@ -1,0 +1,172 @@
+---
+title: "CS5811_New"
+output: html_document
+---
+## Abstract 
+## 1.Importing Libraries
+## 1.1 Dataset Summary (description of dataset)
+## 1.2 Data Cleaning & Quality 
+## 2. EDA (Explanatory data analysis) - graphical analysis 
+## 2.1 PCA + visual analysis 
+## 2.2 Cluster Analysis 
+----- Machine learning 
+## Logistic regression
+## Neural Networks 
+## * Others etcc
+---- -HPCI 
+## Use R packages such as caret & parallel (to implement)
+## Conclusion
+
+
+```{r}
+#Required libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+```
+
+*---Research Question: Predict the energy assumption/power generation based on weather conditions---*
+
+```{r}
+#Weather csv files 
+weather.daily <- read.csv("weather_daily.csv")
+weather.hourly <- read.csv("weather_hourly.csv")
+```
+
+
+```{r}
+# Combined weather data set
+weather.df <- merge(weather.daily, weather.hourly, by=c("time","visibility","windBearing","icon","dewPoint","windSpeed",'pressure',"summary","precipType","humidity"), all.x=TRUE,all.y=FALSE)
+
+#Removing empty columns
+weather2 = select(weather.df, -c(temperature,apparentTemperature, cloudCover, uvIndex, icon))
+```
+
+```{r}
+#Energy/power data sets 
+energy.df <- read.csv("combined.csv")
+weather2$time <- as.Date(weather2$time)
+names(energy.df)[2] ="time"
+energy.df$time <- as.Date(energy.df$time)
+```
+
+
+```{r}
+#weather&energy
+energyvibes<- inner_join(weather2, energy.df, by="time")
+```
+
+
+```{r}
+# Feature reduction
+
+energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
+                                          apparentTemperatureLowTime, sunsetTime, sunriseTime,
+                                          apparentTemperatureMinTime, uvIndexTime,apparentTemperatureHigh,
+                                          apparentTemperatureLow, apparentTemperatureMaxTime, temperatureMaxTime,
+                                          temperatureMinTime, apparentTemperatureMax, apparentTemperatureMin))
+
+```
+
+```{r}
+summary(energy)
+```
+
+```{r}
+energy$energy_median <- as.numeric(energy$energy_median)
+energy$energy_mean <- as.numeric(energy$energy_mean)
+energy$energy_max <- as.numeric(energy$energy_max)
+energy$energy_count <- as.numeric(energy$energy_count)
+energy$energy_std <- as.numeric(energy$energy_std)
+energy$energy_sum <- as.numeric(energy$energy_sum)
+energy$energy_min <- as.numeric(energy$energy_min)
+```
+
+
+# Removing outliers
+
+```{r}
+# Boxplots of all variables 
+# This gives an insight into outliers compared to other variables
+num_df<-energy%>%
+  select(where(is.numeric))
+boxplot(num_df)
+# energy std and sum (max) and energy count (min) 
+```
+- In comparison to each other some have a lot of outliers whereas others don't, so the 3 variables that will have outliers removed are as follows: energy_count, _std and _sum 
+
+```{r}
+# removing energy_count outlier values (Min) 
+boxplot(energy$energy_count)
+# outlier detection from the boxplot 
+#   note: the boxplot command returns a summary statistics object
+#     this object can be assigned to a variable and inspected
+energy_count_boxplot <- boxplot(energy$energy_count)
+# inspect the boxplot statistics
+#   note: the returened value is a list object
+energy_count_boxplot
+# outlier values can be extracted from this object
+#   they are stored in the element 'out' of the list
+energy_count_boxplot$out
+# get the minimum value that is an outlier
+min(energy_count_boxplot$out)
+# outliers rows can be extracted by conditional selection
+energy[energy$energy_count >= min(energy_count_boxplot$out), ]
+```
+
+-- Repeat the same code for (energy std & energy sum)
+
+```{r}
+# removing energy_sum outlier values (max) 
+boxplot(energy$energy_sum)
+#  this object can be assigned to a variable and inspected
+energy_sum_boxplot <- boxplot(energy$energy_sum)
+#   note: the returened value is a list object
+energy_sum_boxplot
+#   they are stored in the element 'out' of the list
+energy_sum_boxplot$out
+# get the max value that is an outlier
+max(energy_sum_boxplot$out)
+# outliers rows can be extracted by conditional selection
+energy[energy$energy_sum >= max(energy_sum_boxplot$out), ]
+```
+
+
+```{r}
+# removing energy_std outlier values (max) 
+boxplot(energy$energy_std)
+# outlier detection from the boxplot 
+energy_std_boxplot <- boxplot(energy$energy_std)
+# inspect the boxplot statistics
+energy_std_boxplot
+#   they are stored in the element 'out' of the list
+energy_std_boxplot$out
+# get the max value that is an outlier
+max(energy_std_boxplot$out)
+# outliers rows can be extracted by conditional selection
+energy[energy$energy_std >= max(energy_std_boxplot$out), ]
+```
+
+
+# Removing duplicate 
+```{r}
+# remove duplicate rows
+energy_nodupes <- unique(energy)
+
+# check the size of the data frames before and after removal
+dim(energy)
+dim(energy_nodupes)
+
+# find the duplicate rows
+#   duplicated returns a boolean vector
+energy_duplicated <- duplicated(energy_nodupes)
+energy_duplicated
+
+# duplicated rows can then be extracted by conditional filtering
+energy_nodupes[energy_duplicated, ]
+```
+# Removing missing values 
+
+
+```{r}
