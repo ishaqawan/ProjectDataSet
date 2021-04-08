@@ -1,0 +1,593 @@
+---
+  title: "CS5811_New"
+output: html_document
+---
+  ## Abstract 
+  ## 1.Importing Libraries
+  ## 1.1 Dataset Summary (description of dataset)
+  ## 1.2 Data Cleaning & Quality 
+  ## 2. EDA (Explanatory data analysis) - graphical analysis 
+  ## 2.1 PCA + visual analysis 
+  ## 2.2 Cluster Analysis 
+  ----- Machine learning 
+## Logistic regression
+## Neural Networks 
+## * Others etcc
+---- -HPCI 
+## Use R packages such as caret & parallel (to implement)
+## Conclusion
+
+
+```{r}
+#Required libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(lubridate)
+library(psych)
+library(scales)
+```
+
+##---Research Question: Predict the energy consumption/power generation based on weather conditions
+
+```{r}
+#Weather csv files 
+weather.daily <- read.csv("weather_daily.csv")
+weather.hourly <- read.csv("weather_hourly.csv")
+```
+
+```{r}
+head(weather.daily)
+head(weather.hourly)
+```
+
+```{r}
+# Combining the two data sets weather_daily and weather_hourly
+weather.df <- merge(weather.daily, weather.hourly, by=c("time","visibility","windBearing","icon","dewPoint","windSpeed",'pressure',"summary","precipType","humidity"), all.x=TRUE,all.y=FALSE)
+```
+
+```{r}
+#Checking and removing empty columns and duplicating time column as time and date
+weather2 = select(weather.df, -c(temperature,apparentTemperature, cloudCover, uvIndex, icon))
+weather2 <- weather2 %>% mutate(timeanddate = time)
+```
+
+```{r}
+#cleaning empty spaces between and after the data
+trimws(weather2$time)
+trimws(weather2$icon)
+trimws(weather2$summary)
+trimws(weather2$precipType)
+trimws(weather2$temperatureMaxTime)
+trimws(weather2$temperatureMinTime)
+trimws(weather2$apparentTemperatureMinTime)
+trimws(weather2$apparentTemperatureHighTime)
+trimws(weather2$sunsetTime)
+trimws(weather2$sunriseTime)
+trimws(weather2$temperatureHighTime)
+trimws(weather2$uvIndexTime)
+trimws(weather2$temperatureLowTime)
+trimws(weather2$apparentTemperatureMaxTime)
+trimws(weather2$apparentTemperatureLowTime)
+```
+
+
+```{r}
+#changing date to POSIXct
+#showing 00:00:00 for midnight 
+print.POSIXct <- function(x,...)print(format(x,"%Y-%m-%d %H:%M:%S"))
+
+weather2$time               <- as.POSIXct(strptime(weather2$time, format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$weatherDay         <- format(as.POSIXct(weather2$time,format="%Y/%m/%d %H:%M:%S"),"%Y/%m/%d")
+
+weather2$timeanddate        <- as.POSIXct(strptime(weather2$timeanddate,
+                                                   format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$temperatureMaxTime <- as.POSIXct(strptime (weather2$temperatureMaxTime,
+                                                    format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$temperatureMinTime <- as.POSIXct(strptime (weather2$temperatureMinTime,
+                                                    format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$apparentTemperatureMinTime   <- as.POSIXct(strptime (weather2$apparentTemperatureMinTime,
+                                                              format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$apparentTemperatureHighTime  <- as.POSIXct(strptime (weather2$apparentTemperatureHighTime,
+                                                              format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$sunsetTime         <- as.POSIXct(strptime(weather2$sunsetTime,
+                                                   format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$sunriseTime        <- as.POSIXct(strptime(weather2$sunriseTime,
+                                                   format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$temperatureHighTime<- as.POSIXct(strptime(weather2$temperatureHighTime,
+                                                   format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$uvIndexTime        <- as.POSIXct(strptime(weather2$uvIndexTime,
+                                                   format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$temperatureLowTime <- as.POSIXct(strptime(weather2$temperatureLowTime,
+                                                   format = "%d/%m/%Y %H:%M",tz="GMT"))
+ 
+weather2$apparentTemperatureMaxTime   <- as.POSIXct(strptime
+                                                    (weather2$apparentTemperatureMaxTime,
+                                                      format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$apparentTemperatureLowTime   <- as.POSIXct(strptime
+                                                    (weather2$apparentTemperatureLowTime,
+                                                      format = "%d/%m/%Y %H:%M",tz="GMT"))
+
+weather2$windBearing    <- as.numeric(weather2$windBearing)
+weather2$precipType     <- as.factor(weather2$precipType)
+weather2$summary        <- as.factor(weather2$summary)
+
+```
+
+```{r}
+str(weather2)
+head(weather2)
+tail(weather2)
+```
+```{r}
+weather3 <- weather2
+```
+
+```{r}
+#Energy/power data sets 
+energy.df <- read.csv("combined.csv")
+#names(energy.df)[2] ="time"
+```
+
+```{r}
+str(energy.df)
+```
+
+```{r}
+#converting data to numerical and char to date
+
+energy.df$day           <- as.Date(energy.df$day, format = "%d/%m/%Y")
+energy.df$LCLid         <- as.factor(energy.df$LCLid)
+energy.df$energy_median <- as.numeric(energy.df$energy_median)
+energy.df$energy_mean   <- as.numeric(energy.df$energy_mean)
+energy.df$energy_max    <- as.numeric(energy.df$energy_max)
+energy.df$energy_count  <- as.numeric(energy.df$energy_count)
+energy.df$energy_std    <- as.numeric(energy.df$energy_std)
+energy.df$energy_sum    <- as.numeric(energy.df$energy_sum)
+energy.df$energy_min    <- as.numeric(energy.df$energy_min)
+```
+
+```{r}
+# Checking converted data
+str(energy.df)
+head(energy.df)
+head(energy.df)
+```
+
+```{r}
+#creating column to join Weather2 and energy.df with weather2 column  weatherDay and day from energy.df
+
+weather2$weatherDay <- as.Date(weather2$weatherDay)
+head(weather2$weatherDay)
+tail(weather2$weatherDay)
+```
+```{r}
+#weather&energy
+
+energyvibes<- inner_join(energy.df, weather2, by = c("day" = "weatherDay"))
+```
+
+```{r}
+#checking joined data
+head(energyvibes)
+tail(energyvibes)
+str(energyvibes)
+```
+
+```{r}
+#backup of All combined data
+#write.csv(energyvibes, "energyvibesDatamerged.csv")
+```
+
+```{r}
+# Feature reduction
+
+#energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
+#                                          apparentTemperatureLowTime, sunsetTime, sunriseTime,
+#                                          apparentTemperatureMinTime,
+#                                          uvIndexTime,apparentTemperatureHigh,
+#                                          apparentTemperatureLow, apparentTemperatureMaxTime,
+#                                          temperatureMaxTime,
+#                                          temperatureMinTime, apparentTemperatureMax,
+#                                          apparentTemperatureMin))
+
+
+energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
+                                          apparentTemperatureLowTime,
+                                          apparentTemperatureMinTime,
+                                          uvIndexTime,
+                                          apparentTemperatureHigh,
+                                          apparentTemperatureLow,
+                                          apparentTemperatureMaxTime,
+                                          apparentTemperatureMax,
+                                          apparentTemperatureMin,
+                                          temperatureMinTime,
+                                          temperatureMaxTime))
+```
+
+
+```{r}
+summary(energy)
+str(energy)
+head(energy)
+```
+
+```{r}
+#checking uniqueness of date w.r.t time and household id for uniqueness
+energyHouseIdDuplicate      <- energy[,c('LCLid','time')]
+energyHouseIdDuplicateCheck <- energy[duplicated(energyHouseIdDuplicate) |
+                                        duplicated(energyHouseIdDuplicate, fromLast=TRUE),]
+
+energyHouseIdDuplicateCheck
+#no duplicates found
+
+#checking duplicates w.r.t household
+energyHouseIdDuplicate      <- energy[,c('LCLid','day')]
+energyHouseIdDuplicateCheck <- energy[duplicated(energyHouseIdDuplicate) |
+                                        duplicated(energyHouseIdDuplicate, fromLast=TRUE),]
+energyHouseIdDuplicateCheck
+#4072 rows resulted in duplicates
+
+#removing duplicates
+energyUnique   <- energy %>% distinct(energy$LCLid, energy$day, .keep_all = TRUE)
+energyUnique
+
+#rechecking duplicate
+#checking duplicates w.r.t household
+
+energyHouseIdDuplicateRecheck <- energyUnique[,c('LCLid','day')]
+energyHouseIdDuplicateRecheck <- energyUnique[duplicated(energyHouseIdDuplicateRecheck) |
+                                        duplicated(energyHouseIdDuplicateRecheck, fromLast=TRUE),]
+
+energyHouseIdDuplicateRecheck
+# 0 results for duplicates
+```
+```{r}
+summary(energyUnique)
+str(energyUnique)
+```
+```{r}
+#data for work
+#write.csv(energyUnique, "energyData.csv")
+```
+```{r}
+#creating sub set of data
+energy_weather_data <- sample_n(energyUnique, 1000)
+head(energy_weather_data)
+tail(energy_weather_data)
+nrow(energy_weather_data)
+```
+
+#breaking down time column in
+```{r}
+#breaking down of time column
+energy_weather_data$energy_time_day   <- format(energy_weather_data$time, format = "%d")
+energy_weather_data$energy_time_month <- format(energy_weather_data$time, format = "%m")
+energy_weather_data$energy_time_year  <- format(energy_weather_data$time, format = "%Y")
+energy_weather_data$energy_time_hour  <- format(energy_weather_data$time, format = "%H")
+energy_weather_data$energy_time_min   <- format(energy_weather_data$time, format = "%M")
+
+#breaking down of temperature temperatureHighTime column
+energy_weather_data$temperature_Hightime_day   <- format(energy_weather_data$temperatureHighTime,
+                                                         format = "%d") 
+energy_weather_data$temperature_Hightime_month <- format(energy_weather_data$temperatureHighTime,
+                                                         format = "%m")
+energy_weather_data$temperature_Hightime_year  <- format(energy_weather_data$temperatureHighTime,
+                                                         format = "%Y")
+energy_weather_data$temperature_Hightime_hour  <- format(energy_weather_data$temperatureHighTime,
+                                                         format = "%H")
+energy_weather_data$temperature_Hightime_min   <- format(energy_weather_data$temperatureHighTime,
+                                                         format = "%M")
+
+#breaking down of temperature temperatureLowTime column
+energy_weather_data$temperature_Lowtime_day   <- format(energy_weather_data$temperatureLowTime,
+                                                         format = "%d") 
+energy_weather_data$temperature_Lowtime_month <- format(energy_weather_data$temperatureLowTime,
+                                                         format = "%m")
+energy_weather_data$temperature_Lowtime_year  <- format(energy_weather_data$temperatureLowTime,
+                                                         format = "%Y")
+energy_weather_data$temperature_Lowtime_hour  <- format(energy_weather_data$temperatureLowTime,
+                                                         format = "%H")
+energy_weather_data$temperature_Lowtime_min   <- format(energy_weather_data$temperatureLowTime,
+                                                         format = "%M")
+
+#breaking down of temperature sunriseTime column
+energy_weather_data$sunriseTime_day   <- format(energy_weather_data$sunriseTime,
+                                                         format = "%d") 
+energy_weather_data$sunriseTime_month <- format(energy_weather_data$sunriseTime,
+                                                         format = "%m")
+energy_weather_data$sunriseTime_year  <- format(energy_weather_data$sunriseTime,
+                                                         format = "%Y")
+energy_weather_data$sunriseTime_hour  <- format(energy_weather_data$sunriseTime,
+                                                         format = "%H")
+energy_weather_data$sunriseTime_min   <- format(energy_weather_data$sunriseTime,
+                                                         format = "%M")
+
+#breaking down of temperature sunsetTime column
+energy_weather_data$sunsetTime_day   <- format(energy_weather_data$sunsetTime,
+                                                         format = "%d") 
+energy_weather_data$sunsetTime_month <- format(energy_weather_data$sunsetTime,
+                                                         format = "%m")
+energy_weather_data$sunsetTime_year  <- format(energy_weather_data$sunsetTime,
+                                                         format = "%Y")
+energy_weather_data$sunsetTime_hour  <- format(energy_weather_data$sunsetTime,
+                                                         format = "%H")
+energy_weather_data$sunsetTime_min   <- format(energy_weather_data$sunsetTime,
+                                                         format = "%M")
+head(energy_weather_data)
+```
+
+
+```{r}
+#converting newly formed deisintegrated time and date char to num
+energy_weather_data$energy_time_day   <- as.numeric(energy_weather_data$energy_time_day)
+energy_weather_data$energy_time_month <- as.numeric(energy_weather_data$energy_time_month)
+energy_weather_data$energy_time_year  <- as.numeric(energy_weather_data$energy_time_year)
+energy_weather_data$energy_time_hour  <- as.numeric(energy_weather_data$energy_time_hour)
+energy_weather_data$energy_time_min   <- as.numeric(energy_weather_data$energy_time_min)
+
+energy_weather_data$temperature_Hightime_day   <- as.numeric(
+                                                  energy_weather_data$temperature_Hightime_day)
+energy_weather_data$temperature_Hightime_month <- as.numeric(
+                                                  energy_weather_data$temperature_Hightime_month)
+energy_weather_data$temperature_Hightime_year  <- as.numeric(
+                                                  energy_weather_data$temperature_Hightime_year)
+energy_weather_data$temperature_Hightime_hour  <- as.numeric(
+                                                  energy_weather_data$temperature_Hightime_hour)
+energy_weather_data$temperature_Hightime_min   <- as.numeric(
+                                                  energy_weather_data$temperature_Hightime_min)
+
+energy_weather_data$temperature_Lowtime_day    <- as.numeric(
+                                                  energy_weather_data$temperature_Lowtime_day)
+energy_weather_data$temperature_Lowtime_month  <- as.numeric(
+                                                  energy_weather_data$temperature_Lowtime_month)
+energy_weather_data$temperature_Lowtime_year   <- as.numeric(
+                                                  energy_weather_data$temperature_Lowtime_year)
+energy_weather_data$temperature_Lowtime_hour   <- as.numeric(
+                                                  energy_weather_data$temperature_Lowtime_hour)
+energy_weather_data$temperature_Lowtime_min    <- as.numeric(
+                                                  energy_weather_data$temperature_Lowtime_min)
+
+energy_weather_data$sunriseTime_day   <- as.numeric(energy_weather_data$sunriseTime_day)
+energy_weather_data$sunriseTime_month <- as.numeric(energy_weather_data$sunriseTime_month)
+energy_weather_data$sunriseTime_year  <- as.numeric(energy_weather_data$sunriseTime_year)
+energy_weather_data$sunriseTime_hour  <- as.numeric(energy_weather_data$sunriseTime_hour)
+energy_weather_data$sunriseTime_min   <- as.numeric(energy_weather_data$sunriseTime_min)
+
+energy_weather_data$sunsetTime_day    <- as.numeric(energy_weather_data$sunsetTime_day)
+energy_weather_data$sunsetTime_month  <- as.numeric(energy_weather_data$sunsetTime_month)
+energy_weather_data$sunsetTime_year   <- as.numeric(energy_weather_data$sunsetTime_year)
+energy_weather_data$sunsetTime_hour   <- as.numeric(energy_weather_data$sunsetTime_hour)
+energy_weather_data$sunsetTime_min    <- as.numeric(energy_weather_data$sunsetTime_min)
+```
+
+```{r}
+str(energy_weather_data)
+```
+```{r}
+#checking Na's occurrence in the data set energy_weather_data 
+weather_dataset_NA_count <- apply(is.na(energy_weather_data),2,sum)
+weather_dataset_NA_count
+
+# one occurrence found in energy_std imputing
+median_energy_std <- median(energy_weather_data$energy_std, na.rm = T)
+energy_weather_data[is.na(energy_weather_data$energy_std), 'energy_std'] = median_energy_std
+```
+
+
+```{r}
+#boxplots to see the outliers of columns
+boxplot(energy_weather_data$time, main = "Energy Time", xlab = "time and date", ylab = "time and date",
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE,origin)
+
+boxplot(energy_weather_data$sunsetTime, main = "Sun Set Time",
+        xlab = "Sun Set Time", ylab = "Sun Set Time", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$sunriseTime, main = "Sun Rise Time",
+        xlab = "Sun Rise Time", ylab = "Sun Rise Time", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$temperatureHighTime, main = "High Temperatre Time",
+        xlab = "High Temperatre Time", ylab = "High Temperatre Time", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$temperatureLowTime, main = "Low Temperatre Time",
+        xlab = "Low Temperatre Time", ylab = "Low Temperatre Time", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$timeanddate, main = "Time and Date",
+        xlab = "Time and Date", ylab = "Time and Date", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+```
+
+```{r}
+#boxplots to see the outliers of columns
+boxplot(energy_weather_data$visibility, main = "Visibility", xlab = "Visibility", ylab = "Visibility",
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$windBearing, main = "Wind Bearing", xlab = "Wind Bearing", ylab = "Wind Bearing",
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$dewPoint, main = "Dew Point", xlab = "Dew Point", ylab = "Dew Point",
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+
+boxplot(energy_weather_data$windSpeed, main = "Wind Speed", xlab = "Wind Speed", ylab = "Wind Speed",
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$pressure, main = "Pressure", xlab = "Pressure", ylab = "Pressure",
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$humidity, main = "Humidity", xlab = "Humidity", ylab = "Humidity",
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$temperatureMax, main = "Maximum Temperature", xlab = "Maximum Temperature",
+        ylab = "Maximum Temperature", col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$temperatureLow, main = "Low Temperature Time",
+        xlab = "Low Temperature Time", ylab = "Low Temperature Time", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$temperatureMin, main = "Minimum Temperature",
+        xlab = "Minimum Temperature", ylab = "Minimum Temperature", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$temperatureHigh, main = "Maximum Temperature",
+        xlab = "Maximum Temperature", ylab = "Maximum Temperature", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$moonPhase, main = "Moon Phase",
+        xlab = "Moon Phase", ylab = "Moon Phase", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$energy_median, main = "Energy Median",
+        xlab = "Energy Median", ylab = "Energy Median", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$energy_mean, main = "Energy Mean",
+        xlab = "Energy Mean", ylab = "Energy Mean", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$energy_max, main = "Energy Maximum",
+        xlab = "Energy Maximum", ylab = "Energy Maximum", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$energy_count, main = "Energy Count",
+        xlab = "Energy Count", ylab = "Energy Count", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$energy_std, main = "Energy STD",
+        xlab = "Energy STD", ylab = "Energy STD", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$energy_sum, main = "Energy Sum",
+        xlab = "Energy Sum", ylab = "Energy Sum", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+boxplot(energy_weather_data$energy_min, main = "Energy Minimum",
+        xlab = "Energy Minimum", ylab = "Energy Minimum", 
+        col = "green", border = "yellow", horizontal = TRUE, notch = TRUE)
+
+#columns with outliers
+#visibility-, windSpeed+,  pressure-, humidity-, energy_median+, energy_mean+, energy_max+, energy_count-, energy_std+, energy_sum+, energy_min+
+```
+
+```{r}
+#removing outliers from the data set energy_weather_data **
+weather_dataset_boxplot <- boxplot(energy_weather_data$visibility)
+max_visibility_outlier  <- max(weather_dataset_boxplot$out)
+test1 <- energy_weather_data[energy_weather_data$visibility < max_visibility_outlier, ]
+```
+```{r}
+#relationship between time and max energy consumption
+ggplot(energy_weather_data, aes(time, energy_max)) +
+       geom_point() +
+       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+       scale_x_datetime(labels = date_format("%d:%m:%Y"))
+```
+
+## Removing outliers
+```{r}
+# Boxplots of all variables 
+# This gives an insight into outliers compared to numerical variables
+num_df <- energyUnique%>% select(where(is.numeric))
+boxplot(num_df)
+```
+
+
+
+
+```{r}
+
+#Outliers energy_median
+```
+# In comparison to each other some have a lot of outliers whereas others don't, so the 3 variables that will have outliers removed are as follows: energy_count, _std and _sum 
+
+```{r}
+# removing energy_count outlier values (Min) 
+boxplot(energy$energy_count)
+# outlier detection from the boxplot 
+#   note: the boxplot command returns a summary statistics object
+#     this object can be assigned to a variable and inspected
+energy_count_boxplot <- boxplot(energy$energy_count)
+# inspect the boxplot statistics
+#   note: the returened value is a list object
+energy_count_boxplot
+# outlier values can be extracted from this object
+#   they are stored in the element 'out' of the list
+energy_count_boxplot$out
+# get the minimum value that is an outlier
+min(energy_count_boxplot$out)
+# outliers rows can be extracted by conditional selection
+energy[energy$energy_count >= min(energy_count_boxplot$out), ]
+```
+
+-- Repeat the same code for (energy std & energy sum)
+
+```{r}
+# removing energy_sum outlier values (max) 
+boxplot(energy$energy_sum)
+#  this object can be assigned to a variable and inspected
+energy_sum_boxplot <- boxplot(energy$energy_sum)
+#   note: the returened value is a list object
+energy_sum_boxplot
+#   they are stored in the element 'out' of the list
+energy_sum_boxplot$out
+# get the max value that is an outlier
+max(energy_sum_boxplot$out)
+# outliers rows can be extracted by conditional selection
+energy[energy$energy_sum >= max(energy_sum_boxplot$out), ]
+```
+
+
+```{r}
+# removing energy_std outlier values (max) 
+boxplot(energy$energy_std)
+# outlier detection from the boxplot 
+energy_std_boxplot <- boxplot(energy$energy_std)
+# inspect the boxplot statistics
+energy_std_boxplot
+#   they are stored in the element 'out' of the list
+energy_std_boxplot$out
+# get the max value that is an outlier
+max(energy_std_boxplot$out)
+# outliers rows can be extracted by conditional selection
+energy[energy$energy_std >= max(energy_std_boxplot$out), ]
+```
+
+
+# Removing duplicate 
+```{r}
+# remove duplicate rows
+energy_nodupes <- unique(energy)
+
+# check the size of the data frames before and after removal
+dim(energy)
+dim(energy_nodupes)
+
+# find the duplicate rows
+#   duplicated returns a boolean vector
+energy_duplicated <- duplicated(energy_nodupes)
+energy_duplicated
+
+# duplicated rows can then be extracted by conditional filtering
+energy_nodupes[energy_duplicated, ]
+```
+# Removing missing values 
+
+
+```{r}
