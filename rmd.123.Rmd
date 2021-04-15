@@ -1,0 +1,642 @@
+---
+title: "Untitled"
+output: html_document
+---
+## Abstract 
+## 1.Importing Libraries
+## 1.1 Dataset Summary (description of dataset)
+## 1.2 Data Cleaning & Quality 
+## 2. EDA (Explanatory data analysis) - graphical analysis 
+## 2.1 PCA + visual analysis 
+## 2.2 Cluster Analysis 
+----- Machine learning 
+## Logistic regression
+## Neural Networks 
+## * Others etcc
+---- -HPCI 
+## Use R packages such as caret & parallel (to implement)
+## Conclusion
+
+------
+
+## 1.Importing Libraries
+
+```{r}
+#Required libraries
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(lubridate)
+library(psych)
+library(scales)
+library("ggstatsplot")
+library("rstantools")
+library(wordcloud)  # word-cloud generator 
+library(RColorBrewer) # color palettes3
+library(tm)  # for text mining
+```
+
+                              ##---Research Question: Predict the energy consumption/power generation based on weather conditions
+
+
+##  Importing Datasets 
+
+```{r}
+#Weather csv files 
+
+weather.daily <- read.csv("weather_daily.csv")
+weather.hourly <- read.csv("weather_hourly.csv")
+
+#Energy/power data sets 
+energy.df <- read.csv("combined.csv")
+```
+
+
+
+## Joining Weather datasets 
+
+```{r}
+# Combined weather data set
+weather.df <- merge(weather.daily, weather.hourly, by=c("time","visibility","windBearing","icon","dewPoint","windSpeed",'pressure',"summary","precipType","humidity"), all.x=TRUE,all.y=FALSE)
+
+#Removing empty columns
+weather2 = select(weather.df, -c(temperature,apparentTemperature, cloudCover, uvIndex, icon))
+```
+
+```{r}
+#Energy/power data sets 
+
+weather2$time <- as.Date(weather2$time)
+names(energy.df)[2] ="time"
+energy.df$time <- as.Date(energy.df$time)
+```
+
+
+## Joining all datasets 
+
+```{r}
+#Combined weather&energy dataset 
+
+energyvibes<- inner_join(weather2, energy.df, by="time")
+```
+
+
+
+
+## Data Cleaning 
+
+```{r}
+# Feature reduction
+
+energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
+                                          apparentTemperatureLowTime, sunsetTime, sunriseTime,
+                                         apparentTemperatureMinTime,
+                                          uvIndexTime,apparentTemperatureHigh,
+                                          apparentTemperatureLow, apparentTemperatureMaxTime,
+                                          temperatureMaxTime, 
+                                          temperatureMinTime, apparentTemperatureMax,
+                                         apparentTemperatureMin))
+```
+
+
+```{r}
+#removing variables from memory
+
+rm(weather.daily)
+rm(weather.hourly)
+rm(weather.df)
+rm(weather2)
+rm(energy.df)
+rm(energyvibes)
+```
+
+```{r}
+# Changing data type
+
+energy$windBearing <- as.numeric(energy$windBearing)
+energy$LCLid         <- as.factor(energy$LCLid)
+energy$energy_median <- as.numeric(energy$energy_median)
+energy$energy_mean   <- as.numeric(energy$energy_mean)
+energy$energy_max    <- as.numeric(energy$energy_max)
+energy$energy_count  <- as.numeric(energy$energy_count)
+energy$energy_std    <- as.numeric(energy$energy_std)
+energy$energy_sum    <- as.numeric(energy$energy_sum)
+energy$energy_min    <- as.numeric(energy$energy_min)
+```
+
+
+## Imputing missing values 
+
+```{r}
+#Checking the the no.of columns with missing values 
+
+colSums(is.na(energy))
+
+# The following variables have missing values:
+# energy_median, mean,max,std,sum and min.
+```
+
+```{r}
+# imputing missing values by replacing them with the median 
+median_energy <- median(energy$energy_median, na.rm = T)
+mean_energy <- median(energy$energy_mean, na.rm = T)
+max_energy <- median(energy$energy_max, na.rm = T)
+min_energy <- median(energy$energy_min, na.rm = T)
+std_energy <- median(energy$energy_std, na.rm = T)
+sum_energy <- median(energy$energy_sum, na.rm = T)
+
+# once the median is discovered, remove the missing value by replacing it with the median 
+energy[is.na(energy$energy_median), 'energy_median'] = median_energy
+energy[is.na(energy$energy_mean), 'energy_mean'] = mean_energy
+energy[is.na(energy$energy_max), 'energy_max'] = max_energy
+energy[is.na(energy$energy_min), 'energy_min'] = min_energy
+energy[is.na(energy$energy_std), 'energy_std'] = std_energy
+energy[is.na(energy$energy_sum), 'energy_sum'] = sum_energy
+
+# checking the dimension and if there are any missing values
+dim(energy)
+colSums(is.na(energy))
+```
+
+```{r}
+energy$energy_median <- as.numeric(energy$energy_median)
+```
+
+
+
+## Removing outliers
+
+```{r}
+## Removing outliers
+# Boxplots of all variables 
+# This gives an insight into outliers compared to numerical variables
+
+num_df <- energy %>% select(where(is.numeric)) %>% map(~ boxplot.stats(.x)$out)
+par(mar=c(7,5,1,1))
+boxplot(num_df, main = "Outliers", col = "green", border = "black", las = 2 )
+
+# outliers: pressure, windSpeed, energy_sum,mean, std,max and min
+```
+
+```{r}
+#imputing the outliers
+#1 energy_median
+median_weather_energy = boxplot(energy$energy_median)
+min_median_energy     = min(median_weather_energy$out)
+energy_weather_data_outliers = energy[energy$energy_median <
+                                                      min_median_energy, ]
+
+#2 energy_max
+max_weather_energy = boxplot(energy_weather_data_outliers$energy_max)
+min_max_energy     = min(max_weather_energy$out)
+energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$energy_max <
+                                                        min_max_energy, ]
+
+#3 energy_std
+std_weather_energy = boxplot(energy_weather_data_outliers$energy_std)
+min_std_energy     = min(std_weather_energy$out)
+energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$energy_std <
+                                                        min_std_energy, ]
+#4 energy_min
+min_weather_energy  = boxplot(energy_weather_data_outliers$energy_min)
+min_min_energy      = min(min_weather_energy$out)
+energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$energy_min <
+                                                       min_min_energy, ]
+#5 windSpeed
+wind_weather_energy  = boxplot(energy_weather_data_outliers$windSpeed)
+min_wind_energy      = min(wind_weather_energy$out)
+energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$windSpeed <
+                                                      min_wind_energy, ]
+#6 energy_mean
+mean_weather_energy = boxplot(energy_weather_data_outliers$energy_mean)
+min_mean_energy     = min(mean_weather_energy$out)
+energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$energy_mean <
+                                                              min_mean_energy, ]
+
+
+### Pressure variable I couldn't remove the outliers 
+```
+
+
+```{r}
+#clearing up the memory 
+
+rm(wind_weather_energy)
+rm(mean_weather_energy)
+rm(min_weather_energy)
+rm(std_weather_energy)
+rm(max_weather_energy)
+rm(median_weather_energy)
+rm(num_df)
+
+```
+
+
+## Data Quality check 
+
+```{r}
+
+# Validating the quality of the data
+
+# validate::validator(,smart_meter_london)
+
+
+
+
+```
+
+
+
+
+### Exploratory Data Analysis
+
+
+###. Summary statistics ( DOUBLE CHECK )
+
+```{r}
+# load the the data set
+data(energy_weather_data_outliers)
+
+# inspect the dataset
+str(energy_weather_data_outliers)
+
+# summary
+summary(energy_weather_data_outliers)
+
+# calculate person correlation coefficient for each pair of variables
+cor(energy_weather_data_outliers)
+```
+
+
+
+
+
+## Graphical Analysis 
+```{rGraph plotting}
+#Graph plotting
+hist(energy_weather_data_outliers$energy_mean, 
+     main="Mean Energy Consumption", xlab="energy_mean cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$energy_mean), lty = 2)
+  legend('topright', 'median of mean energy consumption', lty = 2, bty = 'n')
+
+hist(energy_weather_data_outliers$energy_median, 
+     main="Median Energy Consumption", xlab="energy_median cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$energy_median), lty = 2)
+  legend('topright', 'median of median energy consumption', lty = 2, bty = 'n')
+
+hist(energy_weather_data_outliers$energy_std, 
+     main="Standard deviation of Energy Consumption", xlab="energy_std cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$energy_std), lty = 2)
+  legend('topright', 'median of SD energy consumption', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$energy_count, 
+     main="Count of Energy Consumption", xlab="energy_count cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$energy_count), lty = 2)
+  legend('topright', 'median of median energy consumption', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$energy_max, 
+     main="Maximum Energy Consumption", xlab="energy_max cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$energy_max), lty = 2)
+  legend('topright', 'maximum of median energy consumption', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$energy_sum,
+     main="Sum of Energy Consumption", xlab="energy_sum cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$energy_sum), lty = 2)
+  legend('topright', 'Sum of median energy consumption', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$energy_sum,
+     main="Sum of Energy Consumption", xlab="energy_sum cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$energy_sum), lty = 2)
+  legend('topright', 'Sum of median energy consumption', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$energy_min,
+     main="Min of Energy Consumption", xlab="energy_min cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$energy_min), lty = 2)
+  legend('topright', 'Minimum of median energy consumption', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$windSpeed,
+     main="Wind Speed during the day", xlab="windSpeed cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$windSpeed), lty = 2)
+  legend('topright', 'Wind speed median of the the day', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$pressure,
+     main="Atmospheric pressure during the day", xlab="pressure cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$pressure), lty = 2)
+  legend('topright', 'Pressure median of the the day', lty = 2, bty = 'n')
+
+hist(energy_weather_data_outliers$humidity,
+     main="Humidity during the day", xlab="humidity cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$humidity), lty = 2)
+  legend('topright', 'Humidity median of the the day', lty = 2, bty = 'n')
+
+hist(energy_weather_data_outliers$temperatureMax,
+     main="Maximum temperature during the day", xlab="maximum temperature cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$temperatureMax), lty = 2)
+  legend('topright', 'Maximum temperature median of the the day', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$temperatureLow,
+     main="Low temperature during the day", xlab="low temperature cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$temperatureLow), lty = 2)
+  legend('topright', 'Low temperature median of the the day', lty = 2, bty = 'n')
+
+hist(energy_weather_data_outliers$temperatureMin,
+     main="Minimum temperature during the day", xlab="minimum temperature cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$temperatureMin), lty = 2)
+  legend('topright', 'Maximum temperature median of the the day', lty = 2, bty = 'n')
+
+hist(energy_weather_data_outliers$temperatureHigh,
+     main="High temperature during the day", xlab="high temperature cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$temperatureHigh), lty = 2)
+  legend('topright', 'Maximum temperature median of the the day', lty = 2, bty = 'n')
+  
+hist(energy_weather_data_outliers$moonPhase,
+     main="Moon phase", xlab="high temperature cloumn", border="blue",
+     col="green", las=1)
+  abline(v = median(energy_weather_data_outliers$temperatureHigh), lty = 2)
+  legend('topright', 'Maximum temperature median of the the day', lty = 2, bty = 'n')
+```
+
+
+
+## Word Cloud part  ( REWORD the #)
+
+```{r}
+# setting seed for the reproducibility of the word cloud
+
+set.seed(20)
+
+# Collapsing spaces and storing the values inside a variable
+
+words = paste(energy_weather_data_outliers$summary, collapse = " ")
+
+# Removing superfluous words
+
+words = stringr::str_replace_all(words,"throughout","")
+words = stringr::str_replace_all(words,"mostly","")
+words = stringr::str_replace_all(words,"partly","")
+
+# Wordcloud code
+
+wordcloud(words = words, min.freq = 1,
+          max.words=1000, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+```
+
+# Removing unnecessary components that will not be used in the EDA
+
+energy_weather_data_outliers$summary = NULL
+```{r}
+# changing the name of dataframe and removing it from the memory
+new_energy_weather <- energy_weather_data_outliers
+rm(energy_weather_data_outliers)
+```
+
+
+## Correlation Map
+*this tells us how many numerical variables are highly correlated (anything above +-0.75 we should double check)*
+
+```{r}
+# Create Correlation map of variables
+
+corr.set <- select_if(new_energy_weather,is.numeric)
+corr.matrix = round(cor(corr.set),2)
+corr.matrix 
+
+# Function
+
+get_upper_tri <- function(corr.matrix){
+    corr.matrix[lower.tri(corr.matrix)]= NA
+    return(corr.matrix)
+}
+
+# using upper triangle function to return the upper half of the correlation map
+
+upper_tri <- get_upper_tri(corr.matrix)
+upper_tri
+
+# Upper Triangle( heatmap)
+
+melt_cormat <- melt(upper_tri, na.rm = TRUE)
+
+# Creating the Heatmap
+
+ggheatmap = ggplot(data = melt_cormat, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()
+
+# Adding the coefficients onto the heatmap
+corelcoef = ggheatmap + geom_text(aes(Var2, Var1, label = value), color = "black", size = 2) +
+theme( 
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.grid.major = element_blank(), 
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  legend.justification = c(1, 0),
+  legend.position = c(0.6, 0.7),
+  legend.direction = "horizontal")+ guides(fill = guide_colorbar(barwidth = 7, barheight = 1, 
+                                                                 title.position = "top", 
+                                                                 title.hjust = 0.5))
+# Print 
+corelcoef
+# Removing from memory
+rm(numericset)
+
+```
+
+energy mean and sum have a correlation of 1!!
+
+## Further removal of variables
+
+```{r}
+# Removing highly correlated variables 
+                                                  
+energy_weather321 = select(new_energy_weather, -c(moonPhase,
+                                                  temperatureMax,
+                                                  energy_std,
+                                                  dewPoint))
+# memory clean up 
+rm(corr.set)
+rm(ggheatmap)
+rm(melt_cormat)
+rm(upper_tri)
+rm(corr.matrix)
+rm(corelcoef)
+
+```
+## Preparing the data for PCA 
+```{r}
+## For PCA all variables need to be numerical
+str(energy_weather321)
+
+numeric.df = energy_weather321 %>% 
+  select(visibility, windBearing, 
+         windSpeed,pressure, 
+         humidity, temperatureLow,
+         temperatureMin,temperatureHigh,
+         energy_median,energy_mean, energy_max,
+         energy_count, energy_sum, energy_min)
+
+# Catergorical variables that have been removed prior to running PC
+# temperatureLowTime
+# temperatureHighTime
+# time
+# summary
+# LCLid
+
+```
+
+
+
+
+
+( COPIED ALESSANDROS BUT I THINK WE NEED TO CHANGE A FEW THINGS)
+## Principal Component Analysis    
+
+```{r} 
+#  principle components
+
+# perform PCA on the swiss dataset
+#   note: variables are centered and scaled before analysis
+pca_energy <- prcomp(numeric.df, center = T, scale. = T)
+
+# inspect the attributes of the PCA object returned by prcomp
+attributes(pca_energy)
+# see value section of the help for the prcomp for more details
+help(prcomp)
+```
+
+#### 4. Visual analysis of PCA results{#Visual_analysis_PCA}
+```{r}
+# calculate the proportion of exaplained variance (PEV) from the std values
+pc_energy_var <- pca_energy$sdev^2
+pc_energy_var
+pc_energy_PEV <- pc_energy_var / sum(pc_energy_var)
+pc_energy_PEV
+
+# plot the variance per PC
+#   note: this can be done using the plot function on the prcomp object
+plot(pca_energy)
+
+# plot the cumulative value of PEV for increasing number of additional PCs
+#   note: add an 80% threshold line to inform the feature extraction
+#     according to the plot the first 3 PCs should be selected
+opar <- par()
+plot(
+  cumsum(pc_energy_PEV),
+  ylim = c(0,1),
+  xlab = 'PC',
+  ylab = 'cumulative PEV',
+  pch = 20,
+  col = 'orange' 
+)
+abline(h = 0.8, col = 'red', lty = 'dashed')
+par(opar)
+
+# get and inspect the loadings for each PC
+#   note: loadings are reported as a rotation matrix (see lecture)
+pc_energy_loadings <- pca_energy$rotation
+pc_energy_loadings
+
+# plot the loadings for the first three PCs as a barplot
+#   note: two vectors for colours and labels are created for convenience
+#     for details on the other parameters see the help for barplot and legend
+opar <- par()
+colvector = c('red', 'orange', 'yellow', 'green', 'cyan', 'blue')
+labvector = c('PC1', 'PC2', 'PC3')
+barplot(
+  pc_energy_loadings[,c(1:3)],
+  beside = T,
+  yaxt = 'n',
+  names.arg = labvector,
+  col = colvector,
+  ylim = c(-1,1),
+  border = 'white',
+  ylab = 'loadings'
+)
+axis(2, seq(-1,1,0.1))
+legend(
+  'bottomright',
+  bty = 'n',
+  col = colvector,
+  pch = 15,
+  row.names(pc_energy_loadings)
+)
+par(opar)
+
+# generate a biplot for each pair of important PCs (and show them on the same page)
+#   note: the option choices is used to select the PCs - default is 1:2
+opar = par()
+par(mfrow = c(2,2))
+biplot(
+  pca_energy,
+  scale = 0,
+  col = c('grey40','orange')
+)
+biplot(
+  pca_energy,
+  choices = c(1,3),
+  scale = 0,
+  col = c('grey40','orange')
+)
+biplot(
+  pca_energy,
+  choices = c(2,3),
+  scale = 0,
+  col = c('grey40','orange')
+)
+par(opar)
+
+# the space of the first three PCs is better explored interactively...
+#   ...using a function from the pca3d package
+# first install pca3d
+if(require(pca3d) == FALSE){
+    install.packages('pca3d')
+}
+# then plot and explore the data by rotating/zoom with the mouse
+pca3d::pca3d(pca_energy, show.labels = T)
+
+# and save a snapshot of the view in png format
+pca3d::snapshotPCA3d('pc_energy_3D.png')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
