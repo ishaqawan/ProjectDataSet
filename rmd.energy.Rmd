@@ -224,7 +224,7 @@ rm(pressure_weather_energy)
 #set.seed(1)
 #data <- energy_weather_data_outliers %>%
 #  group_by(time) %>%
-#  sample_n(., 2)
+#  sample_n(., 5)
 ```
 
 
