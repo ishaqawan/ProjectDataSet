@@ -91,7 +91,8 @@ energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
                                           apparentTemperatureLow, apparentTemperatureMaxTime,
                                           temperatureMaxTime, 
                                           temperatureMinTime, apparentTemperatureMax,
-                                         apparentTemperatureMin))
+                                         apparentTemperatureMin, temperatureHighTime, 
+                                          temperatureLowTime))
 ```
 
 ```{r}
