@@ -91,7 +91,7 @@ energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
                                           temperatureMaxTime, 
                                           temperatureMinTime, apparentTemperatureMax,
                                          apparentTemperatureMin, temperatureHighTime, 
-                                          temperatureLowTime, energy_std))
+                                          temperatureLowTime, energy_std, LCLid))
 ```
 
 ```{r}
@@ -107,7 +107,6 @@ rm(energyvibes)
 ```{r}
 # Data type conversion
 energy$windBearing <- as.numeric(energy$windBearing)
-energy$LCLid         <- as.factor(energy$LCLid)
 energy$energy_median <- as.numeric(energy$energy_median)
 energy$energy_mean   <- as.numeric(energy$energy_mean)
 energy$energy_max    <- as.numeric(energy$energy_max)
@@ -504,7 +503,7 @@ numeric.df = energy_clean %>%
 numeric.df <- numeric.df[,-1]
 
 # Categorical variables that have been removed prior to running PC:
-#time, summary, LCLid
+#time, summary and precipType
 ```
 
 
