@@ -219,7 +219,6 @@ rm(pressure_weather_energy)
 
 # Validating the quality of the data
 
-# validate::validator(,smart_meter_london)
 
 #Quality issue in energy_count
 
