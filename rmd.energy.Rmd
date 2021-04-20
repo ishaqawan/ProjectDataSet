@@ -467,12 +467,20 @@ corelcoef
 rm(numericset)
 
 ```
-energy mean and sum have a correlation of 1!!
 
 
 ## Further removal of variables
 
 ```{r}
+# Feature reduction ( variables that had a high correlation)
+
+energy_clean$temperatureMax = NULL
+energy_clean$temperatureMin = NULL
+energy_clean$energy_count = NULL  # removed becuse the column was empty 
+energy_clean$dewPoint = NULL
+energy_clean$energy_sum = NULL
+
+
 # memory clean up 
 rm(corr.set)
 rm(ggheatmap)
@@ -489,14 +497,13 @@ rm(energy_corr)
 ```{r}
 ## For PCA all variables need to be numerical, PCA can deal with highlight correlated variables,
 # so no need to remove them
-
 numeric.df = energy_clean %>% 
   select(visibility, windBearing, 
          windSpeed,pressure, 
          humidity, temperatureLow,
-         temperatureMin,temperatureHigh,
+         temperatureHigh,
          energy_median,energy_mean, energy_max,
-         energy_count, energy_sum, energy_min, moonPhase, temperatureMax, dewPoint)
+          energy_min, moonPhase)
 
 # Remove time because for some reason its still there
 numeric.df <- numeric.df[,-1]
