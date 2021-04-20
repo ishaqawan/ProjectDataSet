@@ -136,7 +136,6 @@ median_energy <- mean(energy$energy_median, na.rm = T)
 mean_energy <- mean(energy$energy_mean, na.rm = T)
 max_energy <- mean(energy$energy_max, na.rm = T)
 min_energy <- mean(energy$energy_min, na.rm = T)
-std_energy <- mean(energy$energy_std, na.rm = T)
 sum_energy <- mean(energy$energy_sum, na.rm = T)
 
 # Once the median is discovered, remove the missing value by replace it with the median 
@@ -144,12 +143,17 @@ energy[is.na(energy$energy_median), 'energy_median'] = median_energy
 energy[is.na(energy$energy_mean), 'energy_mean'] = mean_energy
 energy[is.na(energy$energy_max), 'energy_max'] = max_energy
 energy[is.na(energy$energy_min), 'energy_min'] = min_energy
-energy[is.na(energy$energy_std), 'energy_std'] = std_energy
 energy[is.na(energy$energy_sum), 'energy_sum'] = sum_energy
+
+
+# Removing energy_std from the data frame
+energy$energy_std = NULL
 
 # Checking the dimension and if there are any missing values
 dim(energy)
 colSums(is.na(energy))
+
+
 ```
 
 
@@ -496,9 +500,9 @@ energy mean and sum have a correlation of 1!!
 # Removing highly correlated variables and time
                                                   
 energy_weather = select(energy_clean, -c(moonPhase,
-                                                  temperatureMax,
-                                                  energy_std,
-                                                 dewPoint, time))
+                                         temperatureMax,
+                                         dewPoint, time))
+                                         
 # memory clean up 
 rm(corr.set)
 rm(ggheatmap)
