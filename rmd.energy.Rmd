@@ -238,6 +238,10 @@ group_by(time) %>%
  sample_n(., 3)
 ```
 
+```{r}
+# Check for duplicates
+sum(duplicated(energy_clean))
+```
 
 ```{r}
 # Clearing memory
@@ -269,20 +273,6 @@ str(energy_clean)
 
 # summary
 summary(energy_clean)
-```
-
-
-```{r}
-# Subsetting numerical variables for correlation
-energy_corr <- energy_clean %>%
-  dplyr::select(where(is.numeric))
-
-# removing time and energy count because its still there
-energy_corr <- energy_corr[, -c(1, 16)]
-
-# calculate an initial person correlation coefficient for each pair of variables
-cor(energy_corr)
-
 ```
 
 
@@ -407,6 +397,20 @@ words = stringr::str_replace_all(words,"morning","")
 wordcloud(words = words, min.freq = 1,
           max.words=1000, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
+
+```
+
+## Correlation
+```{r}
+# Subsetting numerical variables for correlation
+energy_corr <- energy_clean %>%
+  dplyr::select(where(is.numeric))
+
+# removing time and energy count because its still there
+energy_corr <- energy_corr[, -c(1, 16)]
+
+# calculate an initial person correlation coefficient for each pair of variables
+cor(energy_corr)
 
 ```
 
