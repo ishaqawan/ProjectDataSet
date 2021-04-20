@@ -36,7 +36,7 @@ library("rstantools")
 library(wordcloud)  # word-cloud generator 
 library(RColorBrewer) # color palettes3
 library(tm)  # for text mining
-library(neuralnet)
+library(cluster)
 ```
 
  ##---Research Question: Predict the energy consumption/power generation based on weather conditions
