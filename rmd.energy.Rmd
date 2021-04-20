@@ -185,31 +185,26 @@ min_max_energy     = min(max_weather_energy$out)
 energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$energy_max <
                                                         min_max_energy, ]
 
-#3 energy_std
-std_weather_energy = boxplot(energy_weather_data_outliers$energy_std)
-min_std_energy     = min(std_weather_energy$out)
-energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$energy_std <
-                                                        min_std_energy, ]
 
-#4 energy_min
+#3 energy_min
 min_weather_energy  = boxplot(energy_weather_data_outliers$energy_min)
 min_min_energy      = min(min_weather_energy$out)
 energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$energy_min <
                                                        min_min_energy, ]
 
-#5 windSpeed
+#4 windSpeed
 wind_weather_energy  = boxplot(energy_weather_data_outliers$windSpeed)
 min_wind_energy      = min(wind_weather_energy$out)
 energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$windSpeed <
                                                       min_wind_energy, ]
 
-#6 energy_mean
+#5 energy_mean
 mean_weather_energy = boxplot(energy_weather_data_outliers$energy_mean)
 min_mean_energy     = min(mean_weather_energy$out)
 energy_weather_data_outliers = energy_weather_data_outliers[energy_weather_data_outliers$energy_mean <
                                                               min_mean_energy, ]
 
-#7 Pressure
+#6 Pressure
 pressure_weather_energy = boxplot(energy_weather_data_outliers$pressure)$out
 energy_weather_data_outliers <- energy_weather_data_outliers[-c(which(energy_weather_data_outliers$pressure
                                                                       %in% pressure_weather_energy)),]
@@ -221,7 +216,6 @@ energy_weather_data_outliers <- energy_weather_data_outliers[-c(which(energy_wea
 rm(wind_weather_energy)
 rm(mean_weather_energy)
 rm(min_weather_energy)
-rm(std_weather_energy)
 rm(max_weather_energy)
 rm(median_weather_energy)
 rm(num_df)
@@ -234,8 +228,6 @@ rm(pressure_weather_energy)
 ```{r}
 
 # Validating the quality of the data
-
-# validate::validator(,smart_meter_london)
 
 #Quality issue in energy_count
 
@@ -270,9 +262,7 @@ rm(min_max_energy)
 rm(min_mean_energy)
 rm(min_median_energy)
 rm(min_min_energy)
-rm(min_std_energy)
 rm(min_wind_energy)
-rm(std_energy)
 rm(sum_energy)
 ```
 
@@ -319,12 +309,6 @@ hist(energy_clean$energy_median,
      col="green", las=1)
   abline(v = median(energy_clean$energy_median), lty = 2)
   legend('topright', 'median of median energy consumption', lty = 2, bty = 'n')
-
-hist(energy_clean$energy_std, 
-     main="Standard deviation of Energy Consumption", xlab="energy_std cloumn", border="blue",
-     col="green", las=1)
-  abline(v = median(energy_clean$energy_std), lty = 2)
-  legend('topright', 'median of SD energy consumption', lty = 2, bty = 'n')
   
 hist(energy_clean$energy_count, 
      main="Count of Energy Consumption", xlab="energy_count cloumn", border="blue",
