@@ -414,6 +414,8 @@ words = paste(energy_clean$summary, collapse = " ")
 words = stringr::str_replace_all(words,"throughout","")
 words = stringr::str_replace_all(words,"mostly","")
 words = stringr::str_replace_all(words,"partly","")
+words = stringr::str_replace_all(words,"starting","")
+words = stringr::str_replace_all(words,"evening","")
 
 # Wordcloud
 wordcloud(words = words, min.freq = 1,
