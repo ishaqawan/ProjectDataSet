@@ -547,7 +547,6 @@ pc_energy_PEV
 plot(pca_energy)
 ```
 
-It seems like PC1 explains just over 30% of the variance in this data set.
 
 ```{r}
 # Summary of PCA, provides more precise information on each PC loading
