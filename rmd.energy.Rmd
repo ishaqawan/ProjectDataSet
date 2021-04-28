@@ -541,10 +541,6 @@ pc_energy_var <- pca_energy$sdev^2
 pc_energy_var
 pc_energy_PEV <- pc_energy_var / sum(pc_energy_var)
 pc_energy_PEV
-
-# plot the variance per PC
-#   note: this can be done using the plot function on the prcomp object
-plot(pca_energy)
 ```
 
 
@@ -554,6 +550,11 @@ summary(pca_energy)
 ```
 
 PC1 explains 24% of the variation, PC2 = 18%, PC3 = 12%, PC4 = 10%, PC5 = 9% and PC6 = 7%. Just over 80% of the total variance of this data set can be explained by the first 6 PC loadings.
+
+
+```{r}
+fviz_eig(pca_energy, addlabels = TRUE)
+```
 
 ```{r}
 # plot the cumulative value of PEV for increasing number of additional PCs
@@ -628,10 +629,18 @@ biplot(
   scale = 0,
   col = c('light grey','orange')
 )
-
+biplot(
+  pca_energy,
+  choices = c(1,4),
+  scale = 0,
+  col = c('light grey','orange')
+)
 
 ```
 
+```{r}
+fviz_pca_var(pca_energy)
+```
 
 ```{r}
 # Feature reduction ( variables that had a high correlation)
