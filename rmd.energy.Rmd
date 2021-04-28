@@ -33,6 +33,7 @@ library(psych)
 library(scales)
 library("ggstatsplot")
 library("rstantools")
+library(factoextra)
 library(wordcloud)  # word-cloud generator 
 library(RColorBrewer) # color palettes3
 library(tm)  # for text mining
