@@ -642,7 +642,12 @@ biplot(
   scale = 0,
   col = c('light grey','orange')
 )
-
+biplot(
+  pca_energy,
+  choices = c(1,5),
+  scale = 0,
+  col = c('light grey','orange')
+)
 ```
 
 ```{r}
