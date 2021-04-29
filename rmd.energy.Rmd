@@ -585,8 +585,8 @@ The graph shows that the first 6 PCA loadings explain just over 80% of the varia
 # plot the loadings for the first three PCs as a barplot
 #   note: two vectors for colours and labels are created for convenience
 #     for details on the other parameters see the help for barplot and legend
-colvector = c('red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'pink', 'light green', 'coral', 'purple',
-              'darkolivegreen3', 'darkorchid1')
+colvector = c('red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'pink', 'coral', 'palevioletred2',
+              'darkorchid1', 'aquamarine3', 'darkolivegreen3')
 labvector = c('PC1', 'PC2', 'PC3')
 barplot(
   pc_energy_loadings[,c(1:3)],
