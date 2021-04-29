@@ -503,7 +503,7 @@ numeric.df = energy_clean %>%
          windSpeed,pressure, 
          humidity, temperatureLow,
          temperatureHigh,
-         energy_median,energy_mean, energy_max,
+         energy_mean, energy_max,
           energy_min, moonPhase)
 
 # Remove time because for some reason its still there
