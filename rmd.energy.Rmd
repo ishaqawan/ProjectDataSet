@@ -560,8 +560,7 @@ fviz_eig(pca_energy, addlabels = TRUE)
 ```{r}
 # plot the cumulative value of PEV for increasing number of additional PCs
 #   note: add an 80% threshold line to inform the feature extraction
-#     according to the plot the first 3 PCs should be selected
-opar <- par()
+
 plot(
   cumsum(pc_energy_PEV),
   ylim = c(0,1),
@@ -571,7 +570,7 @@ plot(
   col = 'orange' 
 )
 abline(h = 0.8, col = 'red', lty = 'dashed')
-par(opar)
+
 
 # get and inspect the loadings for each PC
 #   note: loadings are reported as a rotation matrix (see lecture)
@@ -583,8 +582,6 @@ The graph shows that the first 6 PCA loadings explain just over 80% of the varia
 
 ```{r}
 # plot the loadings for the first three PCs as a barplot
-#   note: two vectors for colours and labels are created for convenience
-#     for details on the other parameters see the help for barplot and legend
 colvector = c('red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'pink', 'coral', 'palevioletred2',
               'darkorchid1', 'aquamarine3', 'darkolivegreen3')
 labvector = c('PC1', 'PC2', 'PC3')
@@ -609,6 +606,14 @@ legend(
 
 ```
 
+```{r}
+# These plots make it wasier to see contributions to each PC
+fviz_contrib(pca_energy, choice = "var", axes = 1, top = 8)
+fviz_contrib(pca_energy, choice = "var", axes = 2, top = 8)
+fviz_contrib(pca_energy, choice = "var", axes = 3, top = 8)
+fviz_contrib(pca_energy, choice = "var", axes = 4, top = 8)
+fviz_contrib(pca_energy, choice = "var", axes = 5, top = 8)
+```
 
 ```{r}
 # generate a biplot for each pair of important PCs (and show them on the same page)
@@ -642,6 +647,16 @@ biplot(
 
 ```{r}
 fviz_pca_var(pca_energy)
+```
+
+```{r}
+var_energy <- get_pca_var(pca_energy)
+set.seed(10)
+energy_km <- kmeans(var_energy$coord, centers = 3, nstart = 20)
+energy_cluster <- as.factor(energy_km$cluster)
+
+fviz_pca_var(pca_energy, col.var = energy_cluster,
+palette = c('red', 'blue', 'green'), legend.title = "Cluster")
 ```
 
 ```{r}
