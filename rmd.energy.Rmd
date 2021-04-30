@@ -92,7 +92,7 @@ energy <- subset(energyvibes, select = -c(apparentTemperatureHighTime,
                                           temperatureMaxTime, 
                                           temperatureMinTime, apparentTemperatureMax,
                                          apparentTemperatureMin, temperatureHighTime, 
-                                          temperatureLowTime, energy_std, LCLid))
+                                          temperatureLowTime, energy_std, LCLid, energy_count))
 ```
 
 ```{r}
@@ -111,7 +111,6 @@ energy$windBearing <- as.numeric(energy$windBearing)
 energy$energy_median <- as.numeric(energy$energy_median)
 energy$energy_mean   <- as.numeric(energy$energy_mean)
 energy$energy_max    <- as.numeric(energy$energy_max)
-energy$energy_count  <- as.numeric(energy$energy_count)
 energy$energy_sum    <- as.numeric(energy$energy_sum)
 energy$energy_min    <- as.numeric(energy$energy_min)
 energy$precipType    <- as.factor(energy$precipType)
@@ -220,12 +219,7 @@ rm(pressure_weather_energy)
 ```{r}
 
 # Validating the quality of the data
-
-
-#Quality issue in energy_count
-
-energy_weather_data_outliers <- energy_weather_data_outliers %>% 
-  filter(energy_count == 48)
+summary(energy_weather_data_outliers)
 ```
 
 
