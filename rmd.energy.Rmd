@@ -2,19 +2,13 @@
 title: "Untitled"
 output: html_document
 ---
-## Abstract 
+## Table of Contents
 ## 1.Importing Libraries
-## 1.1 Dataset Summary (description of dataset)
-## 1.2 Data Cleaning & Quality 
+## 1.1 Data Cleaning & Quality 
 ## 2. EDA (Explanatory data analysis) - graphical analysis 
 ## 2.1 PCA + visual analysis 
-## 2.2 Cluster Analysis 
 ----- Machine learning 
-## Logistic regression
-## Neural Networks 
-## * Others etcc
 ---- -HPCI 
-## Use R packages such as caret & parallel (to implement)
 ## Conclusion
 
 ------
