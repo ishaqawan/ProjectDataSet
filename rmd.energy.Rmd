@@ -7,8 +7,7 @@ output: html_document
 ## 1.1 Data Cleaning & Quality 
 ## 2. EDA (Explanatory data analysis) - graphical analysis 
 ## 2.1 PCA + visual analysis 
------ Machine learning 
----- -HPCI 
+----- Machine learning algorithm
 ## Conclusion
 
 ------
