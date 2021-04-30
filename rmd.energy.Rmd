@@ -288,8 +288,6 @@ hist(energy_clean$energy_median,
      col="green", las=1)
   abline(v = mean(energy_clean$energy_median), lty = 2)
   legend('topright', 'median energy consumption mean', lty = 2, bty = 'n')
-  
-# Energy count was removed because the only values in that column is 48
 
 # energy max    
 hist(energy_clean$energy_max, 
@@ -402,7 +400,7 @@ energy_corr <- energy_clean %>%
   dplyr::select(where(is.numeric))
 
 # removing time and energy count because its still there
-energy_corr <- energy_corr[, -c(1, 16)]
+energy_corr <- energy_corr[, -1]
 
 # calculate an initial person correlation coefficient for each pair of variables
 cor(energy_corr)
@@ -416,7 +414,7 @@ cor(energy_corr)
 ```{r}
 # Create Correlation map of variables
 corr.set <- select_if(energy_clean,is.numeric)
-corr.set <- corr.set[,-c(1,16)]  # Remove energy_count too because the column just stays empty
+corr.set <- corr.set[,-1]
 corr.matrix = round(cor(corr.set),2)
 corr.matrix 
 
@@ -663,7 +661,6 @@ palette = c('red', 'blue', 'green'), legend.title = "Cluster")
 
 energy_clean$temperatureMax = NULL
 energy_clean$temperatureMin = NULL
-energy_clean$energy_count = NULL  # removed becuse the column was empty 
 energy_clean$dewPoint = NULL
 energy_clean$energy_sum = NULL
 
