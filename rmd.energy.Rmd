@@ -21,7 +21,6 @@ library(ggplot2)
 library(tidyverse)
 library(dplyr)
 library(data.table)
-library(lubridate)
 library(psych)
 library(scales)
 library("ggstatsplot")
@@ -70,6 +69,7 @@ energy.df$time <- as.Date(energy.df$time)
 ```{r}
 # Combined weather&energy dataset 
 energyvibes<- inner_join(weather2, energy.df, by="time")
+names(energyvibes)[1] ="date"
 ```
 
 
@@ -222,7 +222,7 @@ summary(energy_weather_data_outliers)
 # Stratified sampling
 set.seed(1)
 energy_clean <- energy_weather_data_outliers %>%
-group_by(time) %>%
+group_by(date) %>%
  sample_n(., 3)
 ```
 
