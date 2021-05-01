@@ -149,7 +149,7 @@ colSums(is.na(energy))
 # Boxplots of all variables 
 # This gives an insight into outliers compared to numerical variables
 
-num_df <- energy %>% select(where(is.numeric)) %>% map(~ boxplot.stats(.x)$out)
+num_df <- energy %>% select(where(is.numeric))
 par(mar=c(7,5,1,1))
 boxplot(num_df, main = "Outliers", col = "green", border = "black", las = 2 )
 
